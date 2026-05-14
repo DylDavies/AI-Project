@@ -1,42 +1,12 @@
 [
   {
-    "matchup": "Baseline(W) vs Random(B)",
-    "baseline_color": "white",
-    "wins": 5,
-    "losses": 5,
-    "draws": 0,
-    "errors": 0,
-    "total": 10,
-    "win_rate": 0.5
-  },
-  {
-    "matchup": "Random(W) vs Baseline(B)",
+    "matchup": "Trout(W) vs Improved(B)",
     "baseline_color": "black",
-    "wins": 8,
-    "losses": 2,
+    "wins": 1,
+    "losses": 0,
     "draws": 0,
     "errors": 0,
-    "total": 10,
-    "win_rate": 0.8
-  },
-  {
-    "matchup": "Baseline(W) vs Trout(B)",
-    "baseline_color": "white",
-    "wins": 2,
-    "losses": 8,
-    "draws": 0,
-    "errors": 0,
-    "total": 10,
-    "win_rate": 0.2
-  },
-  {
-    "matchup": "Trout(W) vs Baseline(B)",
-    "baseline_color": "black",
-    "wins": 5,
-    "losses": 5,
-    "draws": 0,
-    "errors": 0,
-    "total": 10,
-    "win_rate": 0.5
+    "total": 1,
+    "win_rate": 1.0
   }
 ]

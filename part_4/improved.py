@@ -1,8 +1,9 @@
 import random
 import time
+import chess
 from reconchess import Optional, List, Tuple, GameHistory, WinReason, Player, utilities
 import chess.engine
-from chess import Board, Color, Square, Move, square_name, parse_square, Piece
+from chess import Board, Color, Square, Move, square_name, parse_square, Piece, SQUARES
 from collections import Counter
 
 DEBUG = True
@@ -80,7 +81,7 @@ def get_valid_boards(states: list[Board], window: str) -> list[Board]:
         all_succeeded = True
         for slice in slices:
             square, piece = slice.split(":")
-            
+
             if piece == "?":
                 if state.piece_at(Square(parse_square(square))) is not None:
                     all_succeeded = False
@@ -89,8 +90,8 @@ def get_valid_boards(states: list[Board], window: str) -> list[Board]:
                 if Piece.from_symbol(piece) != state.piece_at(Square(parse_square(square))):
                     all_succeeded = False
                     break
-        
-        if all_succeeded: 
+
+        if all_succeeded:
             valid_states.append(state)
 
     return valid_states
@@ -112,7 +113,7 @@ def build_sense_string(sense_results: List[Tuple[Square, Optional[chess.Piece]]]
 
     return sense_string
 
-class BaselineBot(Player):
+class ImprovedBot(Player):
     def __init__(self) -> None:
         self.board = None
         self.color = None
@@ -206,13 +207,44 @@ class BaselineBot(Player):
 
     def choose_sense(self, sense_actions: List[Square], move_actions: List[chess.Move], seconds_left: float) -> \
             Optional[Square]:
-        
-        interior_actions = [
-            s for s in sense_actions
-            if 0 < chess.square_rank(s) < 7 and 0 < chess.square_file(s) < 7
-        ]
+        interior = [s for s in sense_actions
+                    if 0 < chess.square_file(s) < 7 and 0 < chess.square_rank(s) < 7]
 
-        return random.choice(interior_actions)
+        boards = self.possible_states
+        if len(boards) <= 1:
+            return random.choice(interior)
+
+        # Build per-square disagreement counters, ignoring our own pieces (already known).
+        counters: list[Counter] = [Counter() for _ in range(64)]
+        for b in boards:
+            for sq in SQUARES:
+                p = b.piece_at(sq)
+                if p is not None and p.color == self.color:
+                    continue
+                counters[sq][p.symbol() if p else None] += 1
+
+        # score[sq] = boards that would be eliminated if the most common hypothesis is wrong.
+        score = [(sum(c.values()) - max(c.values())) if c else 0 for c in counters]
+
+        # Slide a 3x3 window over the 36 interior centers and pick the highest-scoring one.
+        best_center: Optional[Square] = None
+        best_key = None
+        for f in range(1, 7):
+            for r in range(1, 7):
+                center = chess.square(f, r)
+                s = sum(score[chess.square(f + df, r + dr)]
+                        for df in (-1, 0, 1) for dr in (-1, 0, 1))
+                # tie-break: prefer squares closer to the board centre, then lower index
+                centrality = -((f - 3.5) ** 2 + (r - 3.5) ** 2)
+                key = (s, centrality, -center)
+                if best_key is None or key > best_key:
+                    best_center, best_key = center, key
+
+        if best_key is not None and best_key[0] == 0:
+            return random.choice(interior)
+
+        _dbg(f"choose_sense: center={chess.square_name(best_center)} window_score={best_key[0]}")
+        return best_center
 
     def handle_sense_result(self, sense_result: List[Tuple[Square, Optional[chess.Piece]]]):
         before = len(self.possible_states)
