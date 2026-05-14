@@ -2,3 +2,4 @@
 stockfish/
 stockfish.exe
 \venv
+__pycache__
