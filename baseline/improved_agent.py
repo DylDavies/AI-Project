@@ -88,7 +88,7 @@ class MyGoat(Player):
         # on the next turn — without any further information about the opponent's move.
         # It is provably tighter than the 1-step greedy and only costs O(36^2 * N) after pre-computation.
         best_square = interior[0]
-        best_score = float('inf')
+        best_key: tuple = (float('inf'), float('inf'), float('inf'))
 
         for s1 in interior:
             # Group board indices by their fingerprint at s1.
@@ -112,11 +112,17 @@ class MyGoat(Player):
 
             score_s1 /= total
 
-            if score_s1 < best_score:
-                best_score = score_s1
+            # Tie-break 1: prefer squares closer to the board centre (d4/e4/d5/e5).
+            # Tie-break 2: prefer lower square index for determinism.
+            cf = chess.square_file(s1)
+            cr = chess.square_rank(s1)
+            centrality = (cf - 3.5) ** 2 + (cr - 3.5) ** 2
+            key = (score_s1, centrality, s1)
+            if key < best_key:
+                best_key = key
                 best_square = s1
 
-        self._obs.on_sense_chosen(best_square, best_score, total)
+        self._obs.on_sense_chosen(best_square, best_key[0], total)
         return best_square
 
     def handle_sense_result(self, sense_result: list[tuple[chess.Square, chess.Piece]]):

@@ -5,6 +5,8 @@ import chess
 import chess.svg
 
 _lock = threading.Lock()
+_server_started = False
+
 _state = {
     "fen": chess.STARTING_FEN,
     "white": "White",
@@ -147,9 +149,13 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def start_server(port: int = 5000) -> None:
+    global _server_started
+    if _server_started:
+        return
     server = ThreadingHTTPServer(("", port), _Handler)
     t = threading.Thread(target=server.serve_forever, daemon=True)
     t.start()
+    _server_started = True
     print(f"Live viewer: http://localhost:{port}", flush=True)
 
 
