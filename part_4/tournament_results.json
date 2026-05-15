@@ -1,12 +1,102 @@
 [
   {
-    "matchup": "Trout(W) vs Improved(B)",
+    "matchup": "Baseline(W) vs Random(B)",
+    "baseline_color": "white",
+    "wins": 10,
+    "losses": 1,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 0.909
+  },
+  {
+    "matchup": "Random(W) vs Baseline(B)",
     "baseline_color": "black",
-    "wins": 1,
+    "wins": 11,
     "losses": 0,
     "draws": 0,
     "errors": 0,
-    "total": 1,
+    "total": 11,
     "win_rate": 1.0
+  },
+  {
+    "matchup": "Baseline(W) vs Trout(B)",
+    "baseline_color": "white",
+    "wins": 10,
+    "losses": 1,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 0.909
+  },
+  {
+    "matchup": "Trout(W) vs Baseline(B)",
+    "baseline_color": "black",
+    "wins": 7,
+    "losses": 4,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 0.636
+  },
+  {
+    "matchup": "Improved(W) vs Random(B)",
+    "baseline_color": "white",
+    "wins": 11,
+    "losses": 0,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 1.0
+  },
+  {
+    "matchup": "Random(W) vs Improved(B)",
+    "baseline_color": "black",
+    "wins": 11,
+    "losses": 0,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 1.0
+  },
+  {
+    "matchup": "Improved(W) vs Trout(B)",
+    "baseline_color": "white",
+    "wins": 11,
+    "losses": 0,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 1.0
+  },
+  {
+    "matchup": "Trout(W) vs Improved(B)",
+    "baseline_color": "black",
+    "wins": 10,
+    "losses": 1,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 0.909
+  },
+  {
+    "matchup": "Baseline(W) vs Improved(B)",
+    "baseline_color": "white",
+    "wins": 5,
+    "losses": 6,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 0.455
+  },
+  {
+    "matchup": "Improved(W) vs Baseline(B)",
+    "baseline_color": "white",
+    "wins": 9,
+    "losses": 2,
+    "draws": 0,
+    "errors": 0,
+    "total": 11,
+    "win_rate": 0.818
   }
 ]
