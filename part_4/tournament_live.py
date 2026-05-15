@@ -156,14 +156,14 @@ def main():
     live_viewer.start_server(port=args.port)
 
     matchups = [
-        # ("Baseline(W) vs Random(B)",   BaselineBot, RandomBot,   "white"),
+        ("Baseline(W) vs Random(B)",   BaselineBot, RandomBot,   "white"),
         # ("Random(W) vs Baseline(B)",   RandomBot,   BaselineBot, "black"),
         # ("Baseline(W) vs Trout(B)",    BaselineBot, TroutBot,    "white"),
         # ("Trout(W) vs Baseline(B)",    TroutBot,    BaselineBot, "black"),
         # ("Improved(W) vs Random(B)",   ImprovedBot, RandomBot,   "white"),
         # ("Random(W) vs Improved(B)",   RandomBot,   ImprovedBot, "black"),
         # ("Improved(W) vs Trout(B)",    ImprovedBot, TroutBot,    "white"),
-        ("Trout(W) vs Improved(B)",    TroutBot,    ImprovedBot, "black")
+        # ("Trout(W) vs Improved(B)",    TroutBot,    ImprovedBot, "black")
         # ("Baseline(W) vs Improved(B)", BaselineBot, ImprovedBot, "white"),
         # ("Improved(W) vs Baseline(B)", ImprovedBot, BaselineBot, "white"),
     ]

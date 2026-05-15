@@ -32,6 +32,8 @@ _ENGINE_UNSAFE_MASK = (
     | chess.STATUS_EMPTY
 )
 
+_NULL_MOVE = Move.null()
+
 def get_moves(board: Board) -> list[str]:
     moves: list[str] = list()
 
@@ -46,12 +48,33 @@ def get_moves(board: Board) -> list[str]:
 
     return list(dict.fromkeys(sorted(moves)))
 
+def fast_copy_board(board: Board) -> Board:
+    b = object.__new__(Board)
+    b.pawns = board.pawns
+    b.knights = board.knights
+    b.bishops = board.bishops
+    b.rooks = board.rooks
+    b.queens = board.queens
+    b.kings = board.kings
+    b.occupied_co = [*board.occupied_co]
+    b.occupied = board.occupied
+    b.promoted = board.promoted
+    b.chess960 = board.chess960
+    b.ep_square = board.ep_square
+    b.castling_rights = board.castling_rights
+    b.turn = board.turn
+    b.fullmove_number = board.fullmove_number
+    b.halfmove_clock = board.halfmove_clock
+    b.move_stack = []
+    b._stack = []
+    return b
+
 def get_possible_next_boards(initial_board: Board, capture_square: Square) -> list[Board]:
     sq_name = square_name(capture_square)
     seen: dict[str, Board] = {}
     for move in get_moves(initial_board):
         if move[2:4] == sq_name:
-            b = initial_board.copy()
+            b = fast_copy_board(initial_board)
             b.push(Move.from_uci(move))
             fen = b.fen()
             if fen not in seen:
@@ -64,7 +87,7 @@ def get_possible_next_boards_no_capture(initial_board: Board) -> list[Board]:
         m = Move.from_uci(move)
         if move != "0000" and initial_board.is_capture(m):
             continue
-        b = initial_board.copy()
+        b = fast_copy_board(initial_board)
         b.push(m)
         fen = b.fen()
         if fen not in seen:
@@ -155,10 +178,9 @@ class BaselineBot(Player):
                 move = Move(attacker_square, enemy_king_square)
                 return move.uci()
 
-        b = board.copy()
+        b = fast_copy_board(board)
         b.turn = color
         b.ep_square = None
-        b.clear_stack()
 
         try:
             result = self.engine.play(b, chess.engine.Limit(time=time_limit), ponder=False)
@@ -186,6 +208,14 @@ class BaselineBot(Player):
         before = len(self.possible_states)
         new_states = []
         for board in self.possible_states:
+            # Pre-expansion filter: if the opponent captured our piece, that piece must
+            # actually exist on this board at capture_square. Boards that disagree are
+            # already inconsistent with what we know about our own piece positions.
+            if captured_my_piece and capture_square is not None:
+                piece = board.piece_at(capture_square)
+                if piece is None or piece.color != self.color:
+                    continue
+
             if capture_square:
                 new_states.extend(get_possible_next_boards(board, capture_square))
             else:
@@ -257,15 +287,37 @@ class BaselineBot(Player):
 
     def handle_move_result(self, requested_move: Optional[chess.Move], taken_move: Optional[chess.Move],
                            captured_opponent_piece: bool, capture_square: Optional[Square]):
-        move = taken_move if taken_move is not None else Move.null()
+        requested = requested_move if requested_move is not None else _NULL_MOVE
+        taken = taken_move if taken_move is not None else _NULL_MOVE
         new_states = []
         for board in self.possible_states:
-            b = board.copy()
+            # Case I: requested a real move but it was blocked (taken=null) → drop boards where it was legal
+            if requested != _NULL_MOVE and taken == _NULL_MOVE:
+                if board.is_legal(requested):
+                    continue
+
+            if taken != _NULL_MOVE:
+                # Case II: taken move wasn't legal on this board → drop it
+                if not board.is_legal(taken):
+                    continue
+                # Case III: capture happened but this board wouldn't have captured
+                if captured_opponent_piece:
+                    if not board.is_capture(taken):
+                        continue
+                    piece_at = board.piece_at(capture_square)
+                    if piece_at and piece_at.piece_type == chess.KING:
+                        continue
+                # Case IV: no capture happened but this board would have captured
+                elif board.is_capture(taken):
+                    continue
+
+            b = fast_copy_board(board)
             try:
-                b.push(move)
+                b.push(taken)
                 new_states.append(b)
             except Exception:
                 pass
+
         if new_states:
             self.possible_states = new_states
 
