@@ -3,7 +3,7 @@ import chess
 import chess.engine
 from reconchess import Player, Color, WinReason, GameHistory, utilities
 
-class MyGoat(Player):
+class RandomSensingAgent(Player):
     def __init__(self):
         self.engine = chess.engine.SimpleEngine.popen_uci('./stockfish.exe', setpgrp=True)
         self.possible_states = set()
