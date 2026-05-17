@@ -4,7 +4,10 @@
       "Bash(python *)",
       "Bash(Get-Content *)",
       "Bash(python3 *)",
-      "Bash(xargs grep -l \"GameHistory\")"
+      "Bash(xargs grep -l \"GameHistory\")",
+      "PowerShell(python3 -c \"import reconchess.bots.trout_bot as t; import inspect; print\\(inspect.getfile\\(t\\)\\)\")",
+      "Bash(py -c \"import reconchess.bots.trout_bot as t; import inspect; print\\(inspect.getfile\\(t\\)\\)\")",
+      "PowerShell(Get-ChildItem *)"
     ]
   }
 }

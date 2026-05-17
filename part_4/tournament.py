@@ -7,6 +7,7 @@ import traceback
 import time
 import datetime
 import chess
+import itertools
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -14,9 +15,9 @@ from reconchess import play_local_game, WinReason
 from reconchess.bots.random_bot import RandomBot
 from reconchess.bots.trout_bot import TroutBot
 import baseline
-from baseline import BaselineBot
+from baseline import RandomSensing
 import improved
-from improved import ImprovedBot
+from improved import ImprovedAgent
 
 # STOCKFISH_PATH = "/opt/stockfish/stockfish"
 STOCKFISH_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../stockfish/stockfish-windows-x86-64-avx2.exe"))
@@ -38,8 +39,8 @@ def _make_patched_init(module):
         Player.__init__(self)
     return _patched_init
 
-BaselineBot.__init__ = _make_patched_init(baseline)
-ImprovedBot.__init__ = _make_patched_init(improved)
+RandomSensing.__init__ = _make_patched_init(baseline)
+ImprovedAgent.__init__ = _make_patched_init(improved)
 
 
 def _setup_run_dir():
@@ -94,7 +95,6 @@ def play_match(white_cls, black_cls, n_games: int, matchup_idx: int,
         results.append(outcome)
         print(f"  Game {i+1}/{n_games}: {outcome} ({duration}s)", flush=True)
 
-        # Save replay JSON
         if history is not None:
             replay_name = f"{matchup_idx:02d}_{label_safe}_{i+1:03d}.json"
             try:
@@ -102,7 +102,6 @@ def play_match(white_cls, black_cls, n_games: int, matchup_idx: int,
             except Exception as e:
                 print(f"  [WARN] Could not save replay: {e}", flush=True)
 
-        # Append to CSV immediately so progress is not lost if run is interrupted
         _append_csv(csv_path, [
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             matchup_idx, label, i + 1,
@@ -113,63 +112,70 @@ def play_match(white_cls, black_cls, n_games: int, matchup_idx: int,
     return results
 
 
-def summarise(matchup_label, baseline_color, results):
-    wins = losses = draws = errors = 0
-    for r in results:
-        if r == "error":
-            errors += 1
-        elif r == "draw":
-            draws += 1
-        elif r == baseline_color:
-            wins += 1
-        else:
-            losses += 1
-    total = len(results)
-    rate = wins / (total - errors) if (total - errors) > 0 else 0.0
-    return {
-        "matchup": matchup_label,
-        "baseline_color": baseline_color,
-        "wins": wins,
-        "losses": losses,
-        "draws": draws,
-        "errors": errors,
-        "total": total,
-        "win_rate": round(rate, 3),
-    }
+def _write_summary(run_dir, all_matchups, all_results, total_duration):
+    # Build per-agent totals across all matchups
+    agent_stats: dict[str, dict] = {}
 
+    for (label, white_cls, black_cls), results in zip(all_matchups, all_results):
+        for cls, color in [(white_cls, "white"), (black_cls, "black")]:
+            name = cls.__name__
+            if name not in agent_stats:
+                agent_stats[name] = {
+                    "wins": 0, "losses": 0, "draws": 0, "errors": 0,
+                    "white_wins": 0, "white_played": 0,
+                    "black_wins": 0, "black_played": 0,
+                }
+            s = agent_stats[name]
+            for r in results:
+                if r == "error":
+                    s["errors"] += 1
+                elif r == "draw":
+                    s["draws"] += 1
+                    s[f"{color}_played"] += 1
+                elif r == color:
+                    s["wins"] += 1
+                    s[f"{color}_wins"] += 1
+                    s[f"{color}_played"] += 1
+                else:
+                    s["losses"] += 1
+                    s[f"{color}_played"] += 1
 
-def _write_summary(run_dir, all_stats, total_duration):
     lines = []
     lines.append(f"Tournament summary — {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     lines.append(f"Total runtime: {total_duration:.0f}s ({total_duration/60:.1f} min)")
     lines.append("")
-    header = f"{'Matchup':<38} {'W':>4} {'L':>4} {'D':>4} {'E':>4} {'Win%':>7}"
-    lines.append(header)
-    lines.append("-" * len(header))
-    for s in all_stats:
-        lines.append(
-            f"{s['matchup']:<38} {s['wins']:>4} {s['losses']:>4} "
-            f"{s['draws']:>4} {s['errors']:>4} {s['win_rate']*100:>6.1f}%"
-        )
 
-    def agg_rate(group):
-        wins   = sum(s["wins"]   for s in group)
-        losses = sum(s["losses"] for s in group)
-        draws  = sum(s["draws"]  for s in group)
-        played = wins + losses + draws
-        return wins / played if played > 0 else 0.0
+    # Per-matchup breakdown
+    hdr = f"{'Matchup':<42} {'W':>4} {'L':>4} {'D':>4} {'E':>4} {'WhiteWin%':>9}"
+    lines.append(hdr)
+    lines.append("-" * len(hdr))
+    for (label, white_cls, black_cls), results in zip(all_matchups, all_results):
+        w = sum(1 for r in results if r == "white")
+        b = sum(1 for r in results if r == "black")
+        d = sum(1 for r in results if r == "draw")
+        e = sum(1 for r in results if r == "error")
+        played = w + b + d
+        rate = w / played if played > 0 else 0.0
+        lines.append(f"{label:<42} {w:>4} {b:>4} {d:>4} {e:>4} {rate*100:>8.1f}%")
 
-    groups = {
-        "Baseline vs RandomBot": [s for s in all_stats if "Baseline" in s["matchup"] and "Random"   in s["matchup"]],
-        "Baseline vs TroutBot":  [s for s in all_stats if "Baseline" in s["matchup"] and "Trout"    in s["matchup"]],
-        "Improved vs RandomBot": [s for s in all_stats if "Improved" in s["matchup"] and "Random"   in s["matchup"]],
-        "Improved vs TroutBot":  [s for s in all_stats if "Improved" in s["matchup"] and "Trout"    in s["matchup"]],
-        "Improved vs Baseline":  [s for s in all_stats if "Improved" in s["matchup"] and "Baseline" in s["matchup"]],
-    }
+    # Per-agent leaderboard
     lines.append("")
-    for label, group in groups.items():
-        if group:
-            lines.append(f"{label} overall win rate: {agg_rate(group)*100:.1f}%")
+    lines.append("=== Agent leaderboard ===")
+    hdr2 = f"{'Agent':<20} {'W':>5} {'L':>5} {'D':>5} {'E':>5} {'Win%':>7} {'AsWhite%':>9} {'AsBlack%':>9}"
+    lines.append(hdr2)
+    lines.append("-" * len(hdr2))
+    ranked = sorted(agent_stats.items(),
+                    key=lambda kv: kv[1]["wins"] / max(kv[1]["wins"] + kv[1]["losses"] + kv[1]["draws"], 1),
+                    reverse=True)
+    for name, s in ranked:
+        played = s["wins"] + s["losses"] + s["draws"]
+        rate = s["wins"] / played if played > 0 else 0.0
+        white_rate = s["white_wins"] / s["white_played"] if s["white_played"] > 0 else 0.0
+        black_rate = s["black_wins"] / s["black_played"] if s["black_played"] > 0 else 0.0
+        lines.append(
+            f"{name:<20} {s['wins']:>5} {s['losses']:>5} {s['draws']:>5} {s['errors']:>5}"
+            f" {rate*100:>6.1f}% {white_rate*100:>8.1f}% {black_rate*100:>8.1f}%"
+        )
 
     text = "\n".join(lines)
     print("\n\n=== RESULTS SUMMARY ===")
@@ -183,8 +189,8 @@ def _write_summary(run_dir, all_stats, total_duration):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--games", type=int, default=25,
-                        help="Games per color per opponent (default 25)")
+    parser.add_argument("--games", type=int, default=1,
+                        help="Games per matchup (default 1)")
     args = parser.parse_args()
     n = args.games
 
@@ -193,39 +199,43 @@ def main():
     print(f"Run directory: {run_dir}", flush=True)
     print(f"Games per matchup: {n}", flush=True)
 
-    matchups = [
-        ("Baseline(W) vs Random(B)",   BaselineBot, RandomBot,   "white"),
-        ("Random(W) vs Baseline(B)",   RandomBot,   BaselineBot, "black"),
-        ("Baseline(W) vs Trout(B)",    BaselineBot, TroutBot,    "white"),
-        ("Trout(W) vs Baseline(B)",    TroutBot,    BaselineBot, "black"),
-        ("Improved(W) vs Random(B)",   ImprovedBot, RandomBot,   "white"),
-        ("Random(W) vs Improved(B)",   RandomBot,   ImprovedBot, "black"),
-        ("Improved(W) vs Trout(B)",    ImprovedBot, TroutBot,    "white"),
-        ("Trout(W) vs Improved(B)",    TroutBot,    ImprovedBot, "black"),
-        ("Baseline(W) vs Improved(B)", BaselineBot, ImprovedBot, "white"),
-        ("Improved(W) vs Baseline(B)", ImprovedBot, BaselineBot, "white"),
+    agents = [
+        ("Improved", ImprovedAgent),
+        ("RandomSensing", RandomSensing),
+        ("RandomBot", RandomBot),
+        ("TroutBot", TroutBot),
     ]
 
-    t_start = time.time()
-    all_stats = []
-    for idx, (label, white_cls, black_cls, baseline_color) in enumerate(matchups):
-        print(f"\n=== {label} ({n} games) ===", flush=True)
-        results = play_match(white_cls, black_cls, n, idx, label, run_dir, csv_path)
-        stats = summarise(label, baseline_color, results)
-        all_stats.append(stats)
+    # Round-robin: every ordered pair plays once (white, black swapped covers both directions)
+    matchups = []
+    for (wname, wcls), (bname, bcls) in itertools.permutations(agents, 2):
+        label = f"{wname}(W) vs {bname}(B)"
+        matchups.append((label, wcls, bcls))
 
-        # Rolling JSON after each matchup so results survive an interrupted run
+    t_start = time.time()
+    all_results = []
+    for idx, (label, white_cls, black_cls) in enumerate(matchups):
+        print(f"\n=== [{idx+1}/{len(matchups)}] {label} ({n} games) ===", flush=True)
+        results = play_match(white_cls, black_cls, n, idx, label, run_dir, csv_path)
+        all_results.append(results)
+
         out_path = os.path.join(run_dir, "tournament_results.json")
         with open(out_path, "w") as f:
-            json.dump(all_stats, f, indent=2)
+            json.dump([
+                {"matchup": m[0], "white": m[1].__name__, "black": m[2].__name__, "results": r}
+                for m, r in zip(matchups[:idx+1], all_results)
+            ], f, indent=2)
 
     total_duration = time.time() - t_start
-    _write_summary(run_dir, all_stats, total_duration)
+    _write_summary(run_dir, matchups, all_results, total_duration)
 
-    # Also write to the legacy path for backwards compatibility
     legacy_path = os.path.join(os.path.dirname(__file__), "tournament_results.json")
     with open(legacy_path, "w") as f:
-        json.dump(all_stats, f, indent=2)
+        json.dump([
+            {"matchup": m[0], "white": m[1].__name__, "black": m[2].__name__, "results": r}
+            for m, r in zip(matchups, all_results)
+        ], f, indent=2)
+
     print(f"\nRun directory: {run_dir}")
     print(f"Replay JSONs:  {os.path.join(run_dir, 'replays')}")
     print(f"Game log CSV:  {csv_path}")

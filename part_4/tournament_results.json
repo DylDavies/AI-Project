@@ -1,102 +1,98 @@
 [
   {
-    "matchup": "Baseline(W) vs Random(B)",
-    "baseline_color": "white",
-    "wins": 10,
-    "losses": 1,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 0.909
+    "matchup": "Improved(W) vs RandomSensing(B)",
+    "white": "ImprovedAgent",
+    "black": "RandomSensing",
+    "results": [
+      "white"
+    ]
   },
   {
-    "matchup": "Random(W) vs Baseline(B)",
-    "baseline_color": "black",
-    "wins": 11,
-    "losses": 0,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 1.0
+    "matchup": "Improved(W) vs RandomBot(B)",
+    "white": "ImprovedAgent",
+    "black": "RandomBot",
+    "results": [
+      "white"
+    ]
   },
   {
-    "matchup": "Baseline(W) vs Trout(B)",
-    "baseline_color": "white",
-    "wins": 10,
-    "losses": 1,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 0.909
+    "matchup": "Improved(W) vs TroutBot(B)",
+    "white": "ImprovedAgent",
+    "black": "TroutBot",
+    "results": [
+      "white"
+    ]
   },
   {
-    "matchup": "Trout(W) vs Baseline(B)",
-    "baseline_color": "black",
-    "wins": 7,
-    "losses": 4,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 0.636
+    "matchup": "RandomSensing(W) vs Improved(B)",
+    "white": "RandomSensing",
+    "black": "ImprovedAgent",
+    "results": [
+      "black"
+    ]
   },
   {
-    "matchup": "Improved(W) vs Random(B)",
-    "baseline_color": "white",
-    "wins": 11,
-    "losses": 0,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 1.0
+    "matchup": "RandomSensing(W) vs RandomBot(B)",
+    "white": "RandomSensing",
+    "black": "RandomBot",
+    "results": [
+      "white"
+    ]
   },
   {
-    "matchup": "Random(W) vs Improved(B)",
-    "baseline_color": "black",
-    "wins": 11,
-    "losses": 0,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 1.0
+    "matchup": "RandomSensing(W) vs TroutBot(B)",
+    "white": "RandomSensing",
+    "black": "TroutBot",
+    "results": [
+      "white"
+    ]
   },
   {
-    "matchup": "Improved(W) vs Trout(B)",
-    "baseline_color": "white",
-    "wins": 11,
-    "losses": 0,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 1.0
+    "matchup": "RandomBot(W) vs Improved(B)",
+    "white": "RandomBot",
+    "black": "ImprovedAgent",
+    "results": [
+      "black"
+    ]
   },
   {
-    "matchup": "Trout(W) vs Improved(B)",
-    "baseline_color": "black",
-    "wins": 10,
-    "losses": 1,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 0.909
+    "matchup": "RandomBot(W) vs RandomSensing(B)",
+    "white": "RandomBot",
+    "black": "RandomSensing",
+    "results": [
+      "black"
+    ]
   },
   {
-    "matchup": "Baseline(W) vs Improved(B)",
-    "baseline_color": "white",
-    "wins": 5,
-    "losses": 6,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 0.455
+    "matchup": "RandomBot(W) vs TroutBot(B)",
+    "white": "RandomBot",
+    "black": "TroutBot",
+    "results": [
+      "white"
+    ]
   },
   {
-    "matchup": "Improved(W) vs Baseline(B)",
-    "baseline_color": "white",
-    "wins": 9,
-    "losses": 2,
-    "draws": 0,
-    "errors": 0,
-    "total": 11,
-    "win_rate": 0.818
+    "matchup": "TroutBot(W) vs Improved(B)",
+    "white": "TroutBot",
+    "black": "ImprovedAgent",
+    "results": [
+      "black"
+    ]
+  },
+  {
+    "matchup": "TroutBot(W) vs RandomSensing(B)",
+    "white": "TroutBot",
+    "black": "RandomSensing",
+    "results": [
+      "black"
+    ]
+  },
+  {
+    "matchup": "TroutBot(W) vs RandomBot(B)",
+    "white": "TroutBot",
+    "black": "RandomBot",
+    "results": [
+      "white"
+    ]
   }
 ]

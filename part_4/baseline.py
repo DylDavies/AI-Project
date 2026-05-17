@@ -5,7 +5,7 @@ import chess.engine
 from chess import Board, Color, Square, Move, square_name, parse_square, Piece
 from collections import Counter
 
-DEBUG = True
+DEBUG = False
 
 def _dbg(msg: str) -> None:
     if DEBUG:
@@ -135,7 +135,7 @@ def build_sense_string(sense_results: List[Tuple[Square, Optional[chess.Piece]]]
 
     return sense_string
 
-class BaselineBot(Player):
+class RandomSensing(Player):
     def __init__(self) -> None:
         self.board = None
         self.color = None
