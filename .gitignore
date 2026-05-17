@@ -4,3 +4,6 @@ stockfish.exe
 \venv
 __pycache__
 logs/
+game_history/
+*.json
+*.txt

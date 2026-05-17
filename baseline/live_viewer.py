@@ -164,7 +164,7 @@ def update(**kwargs) -> None:
         _state.update(kwargs)
 
 
-def record_result(matchup: str, outcome: str) -> None:
+def record_result(matchup: str, outcome: str, goat_color: str) -> None:
     with _lock:
         for row in _state["results_so_far"]:
             if row["matchup"] == matchup:
@@ -172,7 +172,7 @@ def record_result(matchup: str, outcome: str) -> None:
                     row["e"] += 1
                 elif outcome == "draw":
                     row["d"] += 1
-                elif outcome == "win":
+                elif outcome == goat_color:
                     row["w"] += 1
                 else:
                     row["l"] += 1
@@ -182,7 +182,7 @@ def record_result(matchup: str, outcome: str) -> None:
             row["e"] = 1
         elif outcome == "draw":
             row["d"] = 1
-        elif outcome == "win":
+        elif outcome == goat_color:
             row["w"] = 1
         else:
             row["l"] = 1
