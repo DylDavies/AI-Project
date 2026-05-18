@@ -11,8 +11,8 @@ def _dbg(msg: str) -> None:
     if DEBUG:
         print(f"[DBG {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
-# STOCKFISH_PATH = "/opt/stockfish/stockfish"
-STOCKFISH_PATH = "./stockfish/stockfish-windows-x86-64-avx2.exe"
+STOCKFISH_PATH = "/opt/stockfish/stockfish"
+# STOCKFISH_PATH = "./stockfish/stockfish-windows-x86-64-avx2.exe"
 MAX_RESTARTS_PER_GAME = 3
 
 # Status flags that make a board structurally impossible for Stockfish to parse.
@@ -195,9 +195,6 @@ class RandomSensing(Player):
     def handle_game_start(self, color: Color, board: chess.Board, opponent_name: str):
         self.board = board
         self.color = color
-        # possible_states must have turn = opponent's color so that
-        # handle_opponent_move_result generates the opponent's moves, not ours.
-        # The starting board has turn=WHITE; for white we must flip to BLACK.
         b = board.copy()
         b.turn = not color
         b.clear_stack()
@@ -291,23 +288,20 @@ class RandomSensing(Player):
         taken = taken_move if taken_move is not None else _NULL_MOVE
         new_states = []
         for board in self.possible_states:
-            # Case I: requested a real move but it was blocked (taken=null) → drop boards where it was legal
             if requested != _NULL_MOVE and taken == _NULL_MOVE:
                 if board.is_legal(requested):
                     continue
 
             if taken != _NULL_MOVE:
-                # Case II: taken move wasn't legal on this board → drop it
                 if not board.is_legal(taken):
                     continue
-                # Case III: capture happened but this board wouldn't have captured
+
                 if captured_opponent_piece:
                     if not board.is_capture(taken):
                         continue
                     piece_at = board.piece_at(capture_square)
                     if piece_at and piece_at.piece_type == chess.KING:
                         continue
-                # Case IV: no capture happened but this board would have captured
                 elif board.is_capture(taken):
                     continue
 

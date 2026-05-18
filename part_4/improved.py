@@ -12,8 +12,8 @@ def _dbg(msg: str) -> None:
     if DEBUG:
         print(f"[DBG {time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
-# STOCKFISH_PATH = "/opt/stockfish/stockfish"
-STOCKFISH_PATH = "./stockfish/stockfish-windows-x86-64-avx2.exe"
+STOCKFISH_PATH = "/opt/stockfish/stockfish"
+# STOCKFISH_PATH = "./stockfish/stockfish-windows-x86-64-avx2.exe"
 MAX_RESTARTS_PER_GAME = 3
 
 # Status flags that make a board structurally impossible for Stockfish to parse.
@@ -198,9 +198,6 @@ class ImprovedAgent(Player):
         self.board = board
         self.color = color
         self._turn = 0
-        # possible_states must have turn = opponent's color so that
-        # handle_opponent_move_result generates the opponent's moves, not ours.
-        # The starting board has turn=WHITE; for white we must flip to BLACK.
         b = board.copy()
         b.turn = not color
         b.clear_stack()
@@ -211,9 +208,6 @@ class ImprovedAgent(Player):
         before = len(self.possible_states)
         new_states = []
         for board in self.possible_states:
-            # Pre-expansion filter: if the opponent captured our piece, that piece must
-            # actually exist on this board at capture_square. Boards that disagree are
-            # already inconsistent with what we know about our own piece positions.
             if captured_my_piece and capture_square is not None:
                 piece = board.piece_at(capture_square)
                 if piece is None or piece.color != self.color:
@@ -253,7 +247,7 @@ class ImprovedAgent(Player):
                 _dbg(f"choose_sense: early-game center {chess.square_name(center)}")
                 return center
 
-        # Build per-square disagreement counters, ignoring our own pieces (already known).
+        # Build per-square disagreement counters, ignoring our own pieces (already known)
         counters: list[Counter] = [Counter() for _ in range(64)]
         for b in boards:
             for sq in SQUARES:
@@ -262,17 +256,15 @@ class ImprovedAgent(Player):
                     continue
                 counters[sq][p.symbol() if p else None] += 1
 
-        # score[sq] = boards that would be eliminated if the most common hypothesis is wrong.
+        # score[sq] = boards that would be eliminated if the most common hypothesis is wrong
         score = [(sum(c.values()) - max(c.values())) if c else 0 for c in counters]
 
-        # Slide a 3x3 window over the 36 interior centers and pick the highest-scoring one.
         best_center: Optional[Square] = None
         best_key = None
         for f in range(1, 7):
             for r in range(1, 7):
                 center = chess.square(f, r)
-                s = sum(score[chess.square(f + df, r + dr)]
-                        for df in (-1, 0, 1) for dr in (-1, 0, 1))
+                s = sum(score[chess.square(f + df, r + dr)] for df in (-1, 0, 1) for dr in (-1, 0, 1))
                 # tie-break: prefer squares closer to the board centre, then lower index
                 centrality = -((f - 3.5) ** 2 + (r - 3.5) ** 2)
                 key = (s, centrality, -center)
@@ -317,9 +309,9 @@ class ImprovedAgent(Player):
                 continue
             weight = 1.0
             if board.is_capture(move):
-                weight += 0.5
+                weight += 0.7
             if board.gives_check(move):
-                weight += 0.8
+                weight += 1.0
             scores[move_uci] = scores.get(move_uci, 0) + weight
 
         _dbg(f"choose_move: loop took {time.time()-t0:.2f}s, king_capture_votes={sum(king_capture_votes.values())}")
@@ -327,7 +319,7 @@ class ImprovedAgent(Player):
         if king_capture_votes:
             total_king = sum(king_capture_votes.values())
             best_cap, top_votes = king_capture_votes.most_common(1)[0]
-            if top_votes / total_king > 0.5 and total_king / N > 0.35:
+            if top_votes / N > 0.20:
                 _dbg(f"king capture {best_cap}: local={top_votes/total_king:.2f} global={total_king/N:.2f}")
                 return Move.from_uci(best_cap)
 
@@ -343,23 +335,20 @@ class ImprovedAgent(Player):
         taken = taken_move if taken_move is not None else _NULL_MOVE
         new_states = []
         for board in self.possible_states:
-            # Case I: requested a real move but it was blocked (taken=null) → drop boards where it was legal
             if requested != _NULL_MOVE and taken == _NULL_MOVE:
                 if board.is_legal(requested):
                     continue
 
             if taken != _NULL_MOVE:
-                # Case II: taken move wasn't legal on this board → drop it
                 if not board.is_legal(taken):
                     continue
-                # Case III: capture happened but this board wouldn't have captured
+
                 if captured_opponent_piece:
                     if not board.is_capture(taken):
                         continue
                     piece_at = board.piece_at(capture_square)
                     if piece_at and piece_at.piece_type == chess.KING:
                         continue
-                # Case IV: no capture happened but this board would have captured
                 elif board.is_capture(taken):
                     continue
 

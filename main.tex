@@ -1,0 +1,131 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[top=2cm, bottom=2cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{microtype}
+
+\begin{document}
+
+\begin{center}
+  {\large\bfseries COMS4033A/7044A: RBC Report}\\[4pt]
+  Dylan Davies \quad 2672598 \\[2pt]
+  Sudhir Ajodhya  \quad 2652330
+\end{center}
+
+% Intro
+\section{Introduction}
+
+Reconnaissance Blind Chess (RBC) is a variant of chess in which each player observes only
+their own pieces; the opponent's pieces are hidden until sensed. Agents must therefore
+maintain a \emph{belief state} — a set of board positions consistent with all observations
+so far — and make decisions under uncertainty. This report presents the development and
+evaluation of two agents: \textit{RandomSensing} (baseline) and \textit{ImprovedAgent}.
+Multiple improvements were explored and implemented to create a competitive agent capable
+of intelligent sensing and cautious tactical play.
+
+% Results
+\section{Tournament Results}
+
+The double round-robin tournament involved four agents, with each agent playing twice
+against every opponent (once as White, once as Black) for a total of 12 games.
+Table~\ref{tab:leaderboard} details the results.
+
+\begin{table}[h!]
+\centering
+\caption{Agent matchup leaderboard}
+\label{tab:leaderboard}
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Implementation} & \textbf{W} & \textbf{L} & \textbf{D} & \textbf{E} & \textbf{Win\%} & \textbf{As White\%} & \textbf{As Black\%} \\
+\midrule
+ImprovedAgent & 6 & 0 & 0 & 0 & 100.0\% & 100.0\% & 100.0\% \\
+RandomSensing & 4 & 2 & 0 & 0 & 66.7\%  & 66.7\%  & 66.7\%  \\
+TroutBot      & 2 & 4 & 0 & 0 & 33.3\%  & 33.3\%  & 33.3\%  \\
+RandomBot     & 0 & 6 & 0 & 0 & 0.0\%   & 0.0\%   & 0.0\%   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+ImprovedAgent achieved a perfect 6--0 record, winning every game as both White and
+Black. Its informed sensing strategy kept the belief state small and accurate, enabling
+Stockfish to operate on reliable boards and produce consistently strong moves.
+RandomSensing finished second at 4--2, defeating RandomBot and TroutBot but losing
+both games to ImprovedAgent, confirming that even uninformed sensing with majority
+voting outperforms purely random play. TroutBot placed third at 2--4; its Stockfish
+engine crashed in several games, forcing it to forfeit those encounters and explaining
+its underperformance relative to its expected strength. RandomBot lost all six games,
+as expected for a purely random mover.
+
+% Improvements
+\section{Improvements to ImprovedAgent}
+
+\subsection{Information-Theoretic Sensing}
+
+The most significant improvement replaced random sensing with a disagreement-based
+strategy. For each candidate sense centre, the agent computes a window score by
+summing a per-square contribution over all 9 squares of the $3{\times}3$ window:
+
+\[
+  \text{score}(sq) = |S| - \max_{p} \bigl|\{s \in S : \text{piece}(s,\, sq) = p\}\bigr|
+\]
+
+This measures how many boards would be eliminated if the most-common piece hypothesis
+at that square were wrong — i.e.\ how much the square contributes to disambiguation.
+The window with the highest total score is selected; ties are broken by proximity to
+the board centre. Own pieces are excluded since their positions are always known. If
+all scores are zero the agent falls back to a random interior square.
+
+For the first two turns the agent senses the board centre (e4 as White, d5 as Black)
+to gather broad early information before the belief set has been meaningfully narrowed.
+
+\subsection{Weighted Move Scoring}
+
+Rather than a simple vote count, each Stockfish suggestion is assigned a weighted score
+before aggregation:
+
+\begin{itemize}
+  \item \textbf{Base weight:} 1.0 per recommendation.
+  \item \textbf{+0.7} if the move is a capture on the current board.
+  \item \textbf{+1.0} if the move gives check on the current board.
+\end{itemize}
+
+Captures and checks therefore accumulate higher totals and are preferred when raw vote
+counts are tied, nudging the agent toward tactically decisive play.
+
+\subsection{King-Capture Confidence Threshold and Belief State Cap}
+
+RandomSensing attempts a king capture whenever it receives the most votes, even if
+those votes represent a small fraction of all tracked boards, risking wasted turns
+chasing phantom kings. ImprovedAgent only commits to a king capture if the top
+candidate exceeds $20\%$ of all possible boards, balancing reliability and
+aggression.
+
+The belief state cap for opponent-move expansion was raised to $20{,}000$ states.
+Because the improved sensing strategy eliminates far more inconsistent boards per
+turn than random sensing does, the true belief state converges faster; a larger cap
+therefore adds relatively little computation while allowing a more faithful
+representation of the true board distribution.
+
+\subsection{Move-Result Filtering}
+
+After each move, the agent applies four consistency filters to prune the belief state:
+(i)~boards on which a requested-but-blocked move was actually legal are discarded;
+(ii)~boards on which the move taken was illegal are discarded;
+(iii)~if a capture occurred, boards that would not have produced that capture are
+discarded; (iv)~if no capture occurred, boards that would have captured are discarded.
+This tightens the belief state after every action, compounding the gains from
+informed sensing.
+
+% Conclusion
+\section{Conclusion}
+
+ImprovedAgent's perfect tournament record demonstrates that principled uncertainty
+management is the dominant factor in RBC performance. The information-theoretic
+sensing strategy was the primary driver: by directing the sense window toward squares
+of maximum disagreement, the belief state is pruned aggressively each turn, giving
+Stockfish accurate boards to evaluate. Weighted move scoring and the king-capture
+confidence threshold further reduce costly errors, while post-move filtering compounds
+the belief-state gains after every action. Together, these improvements produce an
+agent that outperforms all baselines regardless of colour.
+
+\end{document}

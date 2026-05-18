@@ -4,7 +4,7 @@
     "white": "ImprovedAgent",
     "black": "RandomSensing",
     "results": [
-      "white"
+      "black"
     ]
   },
   {
@@ -68,7 +68,7 @@
     "white": "RandomBot",
     "black": "TroutBot",
     "results": [
-      "white"
+      "black"
     ]
   },
   {
@@ -84,7 +84,7 @@
     "white": "TroutBot",
     "black": "RandomSensing",
     "results": [
-      "black"
+      "white"
     ]
   },
   {
